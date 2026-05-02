@@ -1,0 +1,3 @@
+{"timestamp": "2026-05-02 15:36:30 UTC", "action": "CREATE_CASE", "case_id": "dd3901a7-772e-4b34-a011-791586132a1d", "evidence_id": null, "file_name": null, "user": "Nirja", "details": {"case_name": "phishing"}}
+{"timestamp": "2026-05-02 15:41:09 UTC", "action": "ADD_EVIDENCE", "case_id": "dd3901a7-772e-4b34-a011-791586132a1d", "evidence_id": "91918d5d-0b11-4b79-b47b-c5700eff55a1", "file_name": "sample_evidence.txt", "user": "Nirja", "details": {"tags": ["abc"], "warnings": []}}
+{"timestamp": "2026-05-02 15:41:40 UTC", "action": "VERIFY_EVIDENCE", "case_id": "dd3901a7-772e-4b34-a011-791586132a1d", "evidence_id": "91918d5d-0b11-4b79-b47b-c5700eff55a1", "file_name": "sample_evidence.txt", "user": "Nirja", "details": {"result": "SAFE"}}

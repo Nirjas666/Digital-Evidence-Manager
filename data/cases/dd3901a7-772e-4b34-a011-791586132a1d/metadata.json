@@ -1,0 +1,26 @@
+{
+  "case_id": "dd3901a7-772e-4b34-a011-791586132a1d",
+  "case_name": "phishing",
+  "description": "via email malware",
+  "created_by": "Nirja",
+  "created_at": "2026-05-02 15:36:30 UTC",
+  "evidence": [
+    {
+      "evidence_id": "91918d5d-0b11-4b79-b47b-c5700eff55a1",
+      "original_name": "sample_evidence.txt",
+      "stored_name": "91918d5d-0b11-4b79-b47b-c5700eff55a1_sample_evidence.txt",
+      "stored_path": "D:\\cybersecurity\\Digital Evidence Manager\\digital_evidence_organizer\\data\\cases\\dd3901a7-772e-4b34-a011-791586132a1d\\91918d5d-0b11-4b79-b47b-c5700eff55a1_sample_evidence.txt",
+      "sha256": "50bb1f35be897b241771133fdf567fa3a88f89d492cfbfe4fe021ef9629f397e",
+      "tags": [
+        "abc"
+      ],
+      "added_by": "Nirja",
+      "added_at": "2026-05-02 15:41:09 UTC",
+      "status": "SAFE",
+      "duplicate_hash_warning": [],
+      "last_verified_at": "2026-05-02 15:41:40 UTC",
+      "last_verified_by": "Nirja",
+      "current_hash": "50bb1f35be897b241771133fdf567fa3a88f89d492cfbfe4fe021ef9629f397e"
+    }
+  ]
+}

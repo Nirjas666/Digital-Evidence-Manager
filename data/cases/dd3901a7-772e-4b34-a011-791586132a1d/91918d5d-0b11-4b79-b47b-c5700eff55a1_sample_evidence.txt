@@ -1,0 +1,2 @@
+This is a sample evidence file for testing the Digital Evidence Organizer.
+It contains some text that can be hashed and verified for integrity.
