@@ -30,13 +30,14 @@ class ReportExporter:
             writer.writerow(["Description", case_metadata.get("description", "")])
             writer.writerow(["Created At", case_metadata.get("created_at", "")])
             writer.writerow([])
-            writer.writerow(["Evidence ID", "Original Name", "Stored Name", "SHA256", "Tags", "Status", "Added At", "Added By"])
+            writer.writerow(["Evidence ID", "Original Name", "Stored Name", "Hash", "Algorithm", "Tags", "Status", "Added At", "Added By"])
             for evidence in case_metadata.get("evidence", []):
                 writer.writerow([
                     evidence.get("evidence_id"),
                     evidence.get("original_name"),
                     evidence.get("stored_name"),
-                    evidence.get("sha256"),
+                    evidence.get("hash") or evidence.get("sha256"),
+                    evidence.get("hash_algorithm") or ("sha256" if evidence.get("sha256") else ""),
                     ";".join(evidence.get("tags", [])),
                     evidence.get("status"),
                     evidence.get("added_at"),
@@ -68,11 +69,13 @@ class ReportExporter:
             "Evidence Summary:",
         ]
         for evidence in case_metadata.get("evidence", []):
+            alg = (evidence.get("hash_algorithm") or ("sha256" if evidence.get("sha256") else "")).upper()
+            h = evidence.get("hash") or evidence.get("sha256") or ""
             lines.extend([
                 f"  - Evidence ID: {evidence.get('evidence_id')}",
                 f"    Original Name: {evidence.get('original_name')}",
                 f"    Stored Name: {evidence.get('stored_name')}",
-                f"    SHA256: {evidence.get('sha256')}",
+                f"    Hash ({alg}): {h}",
                 f"    Status: {evidence.get('status')}",
                 f"    Tags: {', '.join(evidence.get('tags', []))}",
                 f"    Added At: {evidence.get('added_at')}",
