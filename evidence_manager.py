@@ -2,7 +2,7 @@ import shutil
 import uuid
 from pathlib import Path
 
-from file_hasher import compute_sha256, verify_file
+from file_hasher import compute_hash, verify_file
 from logger import EvidenceLogger
 from utils import ensure_dir, load_json, save_json, normalize_tags
 
@@ -46,7 +46,11 @@ class EvidenceManager:
             raise FileNotFoundError(f"Case metadata not found for case_id={case_id}")
         return load_json(metadata_path, {})
 
-    def add_evidence(self, case_id, source_path, tags, added_by="Investigator"):
+    def add_evidence(self, case_id, source_path, tags, added_by="Investigator", algorithm="sha256"):
+        """Add evidence to a case and compute/store a hash using the requested algorithm.
+
+        algorithm defaults to 'sha256' for backwards compatibility.
+        """
         case_dir = self.case_root / case_id
         if not case_dir.exists():
             raise FileNotFoundError(f"Case not found: {case_id}")
@@ -56,10 +60,11 @@ class EvidenceManager:
             raise FileNotFoundError(f"Evidence file not found: {source_path}")
 
         evidence_id = str(uuid.uuid4())
-        file_hash = compute_sha256(source_path)
+        algorithm = (algorithm or "sha256").lower()
+        file_hash = compute_hash(source_path, algorithm=algorithm)
         tags = normalize_tags(tags)
 
-        duplicate_case, duplicate_evidence = self._find_duplicate_hash(file_hash)
+        duplicate_case, duplicate_evidence = self._find_duplicate_hash(file_hash, algorithm)
         warnings = []
         if duplicate_evidence:
             warnings.append(
@@ -70,18 +75,22 @@ class EvidenceManager:
         stored_file_path = case_dir / stored_file_name
         shutil.copy2(source_path, stored_file_path)
 
+        # Store canonical fields: 'hash' and 'hash_algorithm'. Keep legacy 'sha256' when algorithm == 'sha256' to avoid immediate breakage.
         evidence_data = {
             "evidence_id": evidence_id,
             "original_name": source_path.name,
             "stored_name": stored_file_name,
             "stored_path": str(stored_file_path.resolve()),
-            "sha256": file_hash,
+            "hash": file_hash,
+            "hash_algorithm": algorithm,
             "tags": tags,
             "added_by": added_by,
             "added_at": self._current_timestamp(),
             "status": "UNVERIFIED",
             "duplicate_hash_warning": warnings,
         }
+        if algorithm == "sha256":
+            evidence_data["sha256"] = file_hash
 
         metadata = self.get_case(case_id)
         metadata["evidence"].append(evidence_data)
@@ -92,7 +101,7 @@ class EvidenceManager:
             evidence_id=evidence_id,
             file_name=source_path.name,
             user=added_by,
-            details={"tags": tags, "warnings": warnings},
+            details={"tags": tags, "warnings": warnings, "hash_algorithm": algorithm},
         )
         return evidence_data
 
@@ -102,11 +111,15 @@ class EvidenceManager:
         if evidence is None:
             raise ValueError(f"Evidence not found: {evidence_id}")
 
-        stored_path = Path(evidence["stored_path"])
+        stored_path = Path(evidence.get("stored_path"))
         if not stored_path.exists():
             raise FileNotFoundError(f"Stored evidence missing: {stored_path}")
 
-        is_safe, current_hash = verify_file(stored_path, evidence["sha256"])
+        # Determine expected hash and algorithm, supporting legacy 'sha256' entries.
+        expected_hash = evidence.get("hash") or evidence.get("sha256")
+        algorithm = evidence.get("hash_algorithm") or ("sha256" if "sha256" in evidence else "sha256")
+
+        is_safe, current_hash = verify_file(stored_path, expected_hash, algorithm=algorithm)
         evidence["last_verified_at"] = self._current_timestamp()
         evidence["last_verified_by"] = verified_by
         evidence["current_hash"] = current_hash
@@ -119,7 +132,7 @@ class EvidenceManager:
             evidence_id=evidence_id,
             file_name=evidence["original_name"],
             user=verified_by,
-            details={"result": evidence["status"]},
+            details={"result": evidence["status"], "hash_algorithm": algorithm},
         )
         return evidence["status"]
 
@@ -144,10 +157,13 @@ class EvidenceManager:
     def get_case_logs(self, case_id):
         return self.logger.load_logs(case_id=case_id)
 
-    def _find_duplicate_hash(self, file_hash):
+    def _find_duplicate_hash(self, file_hash, algorithm="sha256"):
+        # Only treat as duplicate when both algorithm and digest match. Support legacy sha256-only entries.
         for case in self.list_cases():
             for evidence in case.get("evidence", []):
-                if evidence.get("sha256") == file_hash:
+                ev_hash = evidence.get("hash") or evidence.get("sha256")
+                ev_alg = evidence.get("hash_algorithm") or ("sha256" if "sha256" in evidence else "sha256")
+                if ev_hash == file_hash and ev_alg == algorithm:
                     return case["case_id"], evidence
         return None, None
 
