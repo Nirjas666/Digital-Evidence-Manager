@@ -5,13 +5,25 @@ from pathlib import Path
 from file_hasher import compute_hash, verify_file
 from logger import EvidenceLogger
 from utils import ensure_dir, load_json, save_json, normalize_tags
+from migration import run_migration
 
 
 class EvidenceManager:
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, auto_migrate=True):
         self.root_dir = Path(root_dir)
         self.case_root = ensure_dir(self.root_dir / "data" / "cases")
         self.logger = EvidenceLogger(root_dir)
+
+        # Optionally run a non-destructive migration to add canonical hash fields
+        if auto_migrate:
+            try:
+                migrated = run_migration(self.root_dir)
+                if migrated:
+                    # record migration event in the audit log
+                    self.logger.log("MIGRATION", case_id=None, user="SYSTEM", details={"migrated_cases": migrated})
+            except Exception:
+                # Do not prevent initialization if migration fails; it can be run manually.
+                pass
 
     def create_case(self, case_name, description=None, created_by="System"):
         case_id = str(uuid.uuid4())
