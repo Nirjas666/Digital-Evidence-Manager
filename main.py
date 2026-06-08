@@ -9,6 +9,7 @@ from colorama import Fore, Style, init
 from evidence_manager import EvidenceManager
 from exporter import ReportExporter
 from utils import normalize_tags
+from file_hasher import SUPPORTED_ALGORITHMS
 
 
 def print_title():
@@ -54,7 +55,9 @@ def display_evidence(evidence):
     print(Fore.WHITE + f"\nEvidence ID: {evidence['evidence_id']}" + Style.RESET_ALL)
     print(f"  Name: {evidence['original_name']}")
     print(f"  Stored File: {evidence['stored_name']}")
-    print(f"  SHA256: {evidence['sha256']}")
+    alg = (evidence.get('hash_algorithm') or ('sha256' if evidence.get('sha256') else 'sha256')).upper()
+    hashv = evidence.get('hash') or evidence.get('sha256') or ''
+    print(f"  Hash ({alg}): {hashv}")
     print(f"  Status: {evidence.get('status')}")
     print(f"  Tags: {', '.join(evidence.get('tags', []))}")
     if evidence.get("duplicate_hash_warning"):
@@ -85,7 +88,12 @@ def main():
                 file_path = prompt("Evidence file path: ")
                 tags = normalize_tags(prompt("Tags (comma-separated): "))
                 added_by = prompt("Investigator name: ") or "Investigator"
-                evidence = manager.add_evidence(case_id, file_path, tags, added_by)
+                alg_input = prompt(f"Hash algorithm [{', '.join(sorted(SUPPORTED_ALGORITHMS))}] (default sha256): ")
+                algorithm = alg_input.strip().lower() or "sha256"
+                if algorithm not in SUPPORTED_ALGORITHMS:
+                    show_info(f"Unsupported algorithm '{algorithm}', falling back to sha256.")
+                    algorithm = "sha256"
+                evidence = manager.add_evidence(case_id, file_path, tags, added_by, algorithm=algorithm)
                 show_success(f"Added evidence {evidence['evidence_id']}")
                 if evidence.get("duplicate_hash_warning"):
                     show_info("Duplicate hash detected: " + "; ".join(evidence["duplicate_hash_warning"]))
